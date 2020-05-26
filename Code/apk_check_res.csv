@@ -1,0 +1,7 @@
+apk name,so file exsist,lib load src file
+instagram_142.0.0.34.110.apk,True,smali/X/0Lw.1.smali
+messenger_265.0.0.24.107.apk,Error,Error
+test_app_hello.apk,False,No match
+test_app_mono.apk,True,smali/mono/MonoPackageManager.smali
+test_app_react.apk,True,smali/com/facebook/soloader/nativeloader/SystemDelegate.smali
+test_app_room.apk,False,No match
