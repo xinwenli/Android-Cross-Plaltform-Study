@@ -1,7 +1,10 @@
-apk name,so file exsist,lib load src file
-instagram_142.0.0.34.110.apk,True,smali/X/0Lw.1.smali
-messenger_265.0.0.24.107.apk,Error,Error
-test_app_hello.apk,False,No match
-test_app_mono.apk,True,smali/mono/MonoPackageManager.smali
-test_app_react.apk,True,smali/com/facebook/soloader/nativeloader/SystemDelegate.smali
-test_app_room.apk,False,No match
+Apk name,Native library so file exist,Source file name load library,Platform name
+instagram_142.0.0.34.110.apk,True,instagram_142.0.0.34.110/smali/X/0Lw.1.smali,React
+messenger_265.0.0.24.107.apk,True,messenger_265.0.0.24.107/smali/X/00E.smali,React
+test_app_flutter.apk,True,test_app_flutter/smali/io/flutter/embedding/engine/loader/FlutterLoader$1.smali,Flutter
+test_app_hello.apk,False,No match,None
+test_app_io_cap.apk,False,No match,"Capacitor, Cordova"
+test_app_mono.apk,True,test_app_mono/smali/mono/MonoPackageManager.smali,Mono
+test_app_phonegap.apk,False,No match,Cordova
+test_app_react.apk,True,test_app_react/smali/com/facebook/soloader/nativeloader/SystemDelegate.smali,React
+test_app_room.apk,False,No match,None
