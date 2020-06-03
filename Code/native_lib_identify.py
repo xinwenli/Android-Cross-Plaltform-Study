@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os
 import csv
+import sys
 import tarfile
 from android_cross_platform_identify import *
 from subprocess import *
@@ -77,6 +78,7 @@ def apk_decode(apkname):
     )
     out, errors = p.communicate()
     if errors != b"":
+        print(errors)
         p.kill()
         return -1
     p.kill()
@@ -95,6 +97,7 @@ def apk_archive(dirname):
     )
     out, errors = p.communicate()
     if errors != b"":
+        print(errors)
         p.kill()
         return -1
     p.kill()
@@ -216,11 +219,21 @@ def apk_tar_platform_check(tarname):
 
 # main code
 apk_check_res = {}
+
+# check if APK storing dir provided otherwise by difault the working directory
+if len(sys.argv) == 2:
+    workdir = sys.argv[1]
+    # check if given dir exsist
+    if not os.path.isdir(workdir):
+        print("cannot find given directory")
+        exit(1)
+    os.chdir(workdir)
+
 apk_names = apk_scan()
 
 # scanning all apk and save result in apk_check_res
 for apkname in apk_names:
-    print("Current: " + apkname)
+    print("File: " + apkname)
     dirname = apkname[: len(apkname) - 4]
     tarname = dirname + ".tar"
     apk_check_res[apkname] = []
