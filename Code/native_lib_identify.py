@@ -7,18 +7,18 @@ from android_cross_platform_identify import *
 from subprocess import *
 
 # get current apk file name under current dir
-def apk_scan():
-    apk_names = []
-    with os.scandir(".") as it:
+def apk_scan(workdir):
+    dir_apk_names = []
+    with os.scandir(workdir) as it:
         for entry in it:
             if (
                 not entry.name.startswith(".")
                 and entry.name.endswith(".apk")
                 and entry.is_file()
             ):
-                apk_names.append(entry.name)
+                dir_apk_names.append(workdir + os.sep + entry.name)
     it.close()
-    return apk_names
+    return dir_apk_names
 
 
 # check if apk is decoded before and archived in a tar file.
@@ -72,9 +72,9 @@ def apk_clean_up(dirname):
 
 
 # decode apk using apk tool and check if any exception ocurred, if exception or error occured, return -1 else return 0
-def apk_decode(apkname):
+def apk_decode(dir_apk_name):
     p = Popen(
-        "apktool d -r " + apkname, shell=True, stdout=PIPE, stdin=PIPE, stderr=PIPE
+        "apktool d -r " + dir_apk_name, shell=True, stdout=PIPE, stdin=PIPE, stderr=PIPE
     )
     out, errors = p.communicate()
     if errors != b"":
@@ -96,32 +96,12 @@ def apk_archive(dirname):
         stderr=PIPE,
     )
     out, errors = p.communicate()
-    if errors != b"":
+    if errors != b'':
         print(errors)
         p.kill()
         return -1
     p.kill()
     return 0
-
-
-# check if current apk decoded folder file has so lib
-def apk_so_check(tarname):
-    has_lib = False
-    path = os.getcwd()
-    os.chdir(path + os.sep + dirname)
-    with os.scandir(".") as it:
-        for entry in it:
-            if entry.name == "lib" and entry.is_dir():
-                has_lib = True
-    it.close()
-    if has_lib == True:
-        for root, dirs, files in os.walk("lib", topdown=False):
-            for name in files:
-                if not name.startswith(".") and name.endswith(".so"):
-                    os.chdir("..")
-                    return True
-    os.chdir("..")
-    return False
 
 
 # used to find if System.loadlibrary method called in smali source code.
@@ -216,36 +196,77 @@ def apk_tar_platform_check(tarname):
     tar.close()
     return platform_exist, platform_ret
 
+def scan_dir_preprocess(usr_input_scandir):
+    # check if given dir exsist
+    if not os.path.isdir(usr_input_scandir):
+        print("cannot find given directory")
+        return ''
+    # remove extra sep at the end
+    scan_dir_splited = usr_input_scandir.split(os.sep)
+    if scan_dir_splited[len(scan_dir_splited)-1] == '':
+        return os.sep.join(scan_dir_splited[:len(scan_dir_splited)-1])
+    else:
+        return usr_input_scandir
+
 
 # main code
 apk_check_res = {}
 
-# check if APK storing dir provided otherwise by difault the working directory
+# check if APK scan dir provided otherwise by default is the current working directory
+scan_dir = '.'
+out_dir = '.'
+script_dir = os.getcwd()
 if len(sys.argv) == 2:
-    workdir = sys.argv[1]
-    # check if given dir exsist
-    if not os.path.isdir(workdir):
-        print("cannot find given directory")
+    scan_dir = scan_dir_preprocess(sys.argv[1])
+    if scan_dir == '':
         exit(1)
-    os.chdir(workdir)
+    #set output directory name follow scandir name
+    scan_dir_splited = scan_dir.split(os.sep)
+    out_dir = scan_dir_splited[len(scan_dir_splited)-1]
+    if os.path.isdir(out_dir):
+        os.chdir(out_dir)
+    else:
+        os.makedirs(out_dir)
+        os.chdir(out_dir)    
+elif len(sys.argv) == 3:
+    scan_dir = scan_dir_preprocess(sys.argv[1])
+    if scan_dir == '':
+        exit(1)
+    #set output directory name as usr input
+    out_dir = sys.argv[2]
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+        os.chdir(out_dir)
+    else:
+        os.chdir(out_dir)
+else:
+    print("Please give an input directory name contains APK file")
+    print("Usage: python3 native_lib_identify [your APK directory name] (optional)[output directory name]")
+    exit(0)
 
-apk_names = apk_scan()
+dir_apk_names = apk_scan(scan_dir)
 
 # scanning all apk and save result in apk_check_res
-for apkname in apk_names:
-    print("File: " + apkname)
-    dirname = apkname[: len(apkname) - 4]
-    tarname = dirname + ".tar"
+for dir_apk_name in dir_apk_names:
+    print("File: " + dir_apk_name)
+    dir_apk_splited = dir_apk_name.split(os.sep)
+    dirname = os.sep.join(dir_apk_splited[:len(dir_apk_splited)-1])
+    apkname = dir_apk_splited[len(dir_apk_splited)-1]
+    decode_dirname = apkname[:len(apkname) - 4]
+    tarname = apkname[:len(apkname) - 4] + ".tar"
     apk_check_res[apkname] = []
 
     # check if the file is decoded before
     if apk_tar_decoded(tarname) == False:
         # decode apk file as it's not decoded and skip decode error apk
-        if apk_decode(apkname) != 0:
+        if apk_decode(dir_apk_name) != 0:
             apk_check_res[apkname] = ["Error", "Error", "Error"]
-            apk_clean_up(dirname)
+            #apk_clean_up(decode_dirname)
             continue
-        apk_archive(dirname)
+        if apk_archive(decode_dirname) != 0:
+            print("Err adding to tar file")
+            exit(1)
+
 
     # decoded tar file is garanteed available here
     # check so file exsistence in tar file
@@ -264,7 +285,7 @@ for apkname in apk_names:
         )
         apk_check_res[apkname].append(smali_file)
     else:
-        apk_check_res[apkname].append("No match")
+        apk_check_res[apkname].append("N/A")
 
     # check platform
     platform_detected, platformname = apk_tar_platform_check(tarname)
@@ -274,8 +295,8 @@ for apkname in apk_names:
     else:
         apk_check_res[apkname].append("N/A")
 
-    # do cleanup and archive afterwards
-    apk_clean_up(dirname)
+    # do cleanup afterwards
+    apk_clean_up(decode_dirname)
     print("")
 
 # export result in apk_check_res to a csv file
