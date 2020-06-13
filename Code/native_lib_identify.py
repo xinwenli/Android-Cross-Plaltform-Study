@@ -7,13 +7,13 @@ from android_cross_platform_identify import *
 from subprocess import *
 
 # get current apk file name under current dir
-def apk_scan(workdir):
+def apk_tar_scan(workdir):
     dir_apk_names = []
     with os.scandir(workdir) as it:
         for entry in it:
             if (
                 not entry.name.startswith(".")
-                and entry.name.endswith(".apk")
+                and (entry.name.endswith(".apk") or entry.name.endswith(".tar"))
                 and entry.is_file()
             ):
                 dir_apk_names.append(workdir + os.sep + entry.name)
@@ -208,6 +208,24 @@ def scan_dir_preprocess(usr_input_scandir):
     else:
         return usr_input_scandir
 
+# check if current apk has perticular class name
+def apk_tar_custom_class_check(custom_class_name, tarname):
+    tar = tarfile.open(tarname)
+    for tarinfo in tar.getmembers():
+        if file_class_check(custom_class_name, tarinfo.name):
+            tar.close()
+            return True
+    tar.close()
+    return False
+
+# check if given class name match in given file path represent for class name
+def file_class_check(custom_class_name, path):
+    if not path.endswith(".smali"):
+        return False
+    current_class_name = path.replace(os.sep, '.')
+    if custom_class_name in current_class_name:
+        return True
+    return False
 
 # main code
 apk_check_res = {}
@@ -240,35 +258,49 @@ elif len(sys.argv) == 3:
     else:
         os.chdir(out_dir)
 else:
-    print("Please give an input directory name contains APK file")
-    print("Usage: python3 native_lib_identify [your APK directory name] (optional)[output directory name]")
+    print("Please give an input directory name contains APK or decoded TAR file")
+    print("Usage: python3 native_lib_identify [your APK or decoded TAR directory name] (optional)[output directory name]")
     exit(0)
 
-dir_apk_names = apk_scan(scan_dir)
+dir_apk_tar_names = apk_tar_scan(scan_dir)
 
 # scanning all apk and save result in apk_check_res
-for dir_apk_name in dir_apk_names:
-    print("File: " + dir_apk_name)
-    dir_apk_splited = dir_apk_name.split(os.sep)
-    dirname = os.sep.join(dir_apk_splited[:len(dir_apk_splited)-1])
-    apkname = dir_apk_splited[len(dir_apk_splited)-1]
-    decode_dirname = apkname[:len(apkname) - 4]
-    tarname = apkname[:len(apkname) - 4] + ".tar"
+for dir_apk_tar_name in dir_apk_tar_names:
+    print("File: " + dir_apk_tar_name)
+    dir_apk_name = ''
+    dir_tar_name = ''
+    dirname = ''
+    apkname = ''
+    decode_dirname = ''    
+    if dir_apk_tar_name.endswith(".apk"):
+        dir_apk_name = dir_apk_tar_name
+        dir_apk_splited = dir_apk_name.split(os.sep)
+        dirname = os.sep.join(dir_apk_splited[:len(dir_apk_splited)-1])
+        apkname = dir_apk_splited[len(dir_apk_splited)-1]
+        decode_dirname = apkname[:len(apkname) - 4]
+        tarname = apkname[:len(apkname) - 4] + ".tar"
+    if dir_apk_tar_name.endswith(".tar"):
+        dir_tar_name = dir_apk_tar_name
+        dir_tar_splited = dir_tar_name.split(os.sep)
+        tarname = dir_tar_splited[len(dir_tar_splited)-1]
+        decode_dirname = tarname[:len(tarname) - 4]
+        apkname = tarname[:len(tarname) - 4] + ".apk"    
     apk_check_res[apkname] = []
 
-    # check if the file is decoded before
-    if apk_tar_decoded(tarname) == False:
-        # decode apk file as it's not decoded and skip decode error apk
-        if apk_decode(dir_apk_name) != 0:
-            apk_check_res[apkname] = ["Error", "Error", "Error"]
-            #apk_clean_up(decode_dirname)
-            continue
-        if apk_archive(decode_dirname) != 0:
-            print("Err adding to tar file")
-            exit(1)
+    # check if the apk file is decoded before
+    if dir_apk_tar_name.endswith(".apk"):
+        if apk_tar_decoded(tarname) == False:
+            # decode apk file as it's not decoded and skip decode error apk
+            if apk_decode(dir_apk_name) != 0:
+                apk_check_res[apkname] = ["Error", "Error", "Error", "Error"]
+                #apk_clean_up(decode_dirname)
+                continue
+            if apk_archive(decode_dirname) != 0:
+                print("Err adding to tar file")
+                exit(1)
 
 
-    # decoded tar file is garanteed available here
+    # decoded tar file is garanteed available here (either given or archived)
     # check so file exsistence in tar file
     so_exsist = apk_tar_filetype_exist(tarname, ".so")
     if so_exsist:
@@ -295,6 +327,14 @@ for dir_apk_name in dir_apk_names:
     else:
         apk_check_res[apkname].append("N/A")
 
+    # check if androix is used
+    androidx_used = apk_tar_custom_class_check("androidx", tarname)
+    if androidx_used:
+        print("Androidx used")
+        apk_check_res[apkname].append("True")
+    else:
+        apk_check_res[apkname].append("False")
+
     # do cleanup afterwards
     apk_clean_up(decode_dirname)
     print("")
@@ -307,6 +347,7 @@ if len(apk_check_res) != 0:
             "Native library so file exist",
             "Source file name load library",
             "Platform name",
+            "Androidx used",
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -317,6 +358,7 @@ if len(apk_check_res) != 0:
                     "Native library so file exist": apk_check_res[apkname][0],
                     "Source file name load library": apk_check_res[apkname][1],
                     "Platform name": apk_check_res[apkname][2],
+                    "Androidx used": apk_check_res[apkname][3],
                 }
             )
 
