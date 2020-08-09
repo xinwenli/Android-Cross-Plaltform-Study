@@ -1,0 +1,23 @@
+% android2 source
+<android.hardware.camera2.CameraDevice: java.lang.String getId()> -> _SOURCE_
+<android.hardware.camera2.CameraManager: android.hardware.camera2.CameraCharacteristics getCameraCharacteristics(java.lang.String)> -> _SOURCE_
+<android.hardware.camera2.CameraCharacteristic: java.lang.Object get(android.hardware.camera2.CameraCharacteristics.Key)> -> _SOURCE_
+<android.hardware.camera2.CameraCaptureSession.CaptureCallback: void onCaptureCompleted(android.hardware.camera2.CameraCaptureSession,android.hardware.camera2.CaptureRequest;Landroid.hardware.camera2.TotalCaptureResult)> -> _SINK_
+
+% java io both source&sink
+<java.io.FileOutputStream: void <init>(java.io.File)> -> _BOTH_
+<java.io.OutputStream: void write(byte[])> -> _SINK_
+<java.io.FileInputStream: void FileInputStream(java.io.File)> -> _BOTH_
+<java.io.FileInputStream: void <init>(java.io.File)> -> _BOTH_
+
+% firebase sink
+%<com.google.firebase.storage.FirebaseStorage: com.google.firebase.storage.FirebaseStorage getStorage(com.google.firebase.ktx.Firebase)> -> _SINK_
+%<com.google.firebase.storage.FirebaseStorage: com.google.firebase.storage.StorageReference getReference()> -> _SINK_
+%<com.google.firebase.storage.StorageReference: com.google.firebase.storage.UploadTask putFile(android.net.Uri)> -> _SINK_
+
+% java.net sink
+<java.net.URL: java.net.URLConnection openConnection()> -> _SINK_
+<java.net.HttpURLConnection: void setRequestProperty(java.lang.String,java.lang.String)> -> _SINK_
+<java.net.HttpURLConnection: void setDoOutput(boolean)> -> _SINK_
+<java.net.HttpURLConnection: void setDoInput(boolean)> -> _SINK_
+<java.net.HttpURLConnection: void setUseCaches(boolean)> -> _SINK_

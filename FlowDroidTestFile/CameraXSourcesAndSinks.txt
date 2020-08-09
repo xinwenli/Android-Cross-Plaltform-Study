@@ -1,0 +1,23 @@
+% androidx source
+<androidx.camera.core.ImageCapture.OutputFileOptions.Builder: void <init>(java.io.File)> -> _SOURCE_
+<androidx.camera.core.ImageCapture.OutputFileOptions.Builder: void Builder(java.io.File)> -> _SOURCE_
+<androidx.camera.core.ImageCapture.OutputFileOptions.Builder: void build(androidx.camera.core.ImageCapture.OutputFileOptions)> -> _SOURCE_
+<androidx.camera.core.ImageCapture: void takePicture(androidx.camera.core.ImageCapture.OutputFileOptions,java.util.concurrent.Executor,androidx.camera.core.ImageCapture.OnImageSavedCallback)> -> _SOURCE_
+
+% java io both source.sink
+<java.io.FileOutputStream: void <init>(java.io.File)> -> _BOTH_
+<java.io.OutputStream: void write(byte[])> -> _SINK_
+<java.io.FileInputStream: void FileInputStream(java.io.File)> -> _BOTH_
+<java.io.FileInputStream: void <init>(java.io.File)> -> _BOTH_
+
+% firebase sink
+%<com.google.firebase.storage.FirebaseStorage: com.google.firebase.storage.FirebaseStorage getStorage(com.google.firebase.ktx.Firebase)> -> _SINK_
+%<com.google.firebase.storage.FirebaseStorage: com.google.firebase.storage.StorageReference getReference()> -> _SINK_
+%<com.google.firebase.storage.StorageReference: com.google.firebase.storage.UploadTask putFile(android.net.Uri)> -> _SINK_
+
+% java.net sink
+<java.net.URL: java.net.URLConnection openConnection()> -> _SINK_
+<java.net.HttpURLConnection: void setRequestProperty(java.lang.String,java.lang.String)> -> _SINK_
+<java.net.HttpURLConnection: void setDoOutput(boolean)> -> _SINK_
+<java.net.HttpURLConnection: void setDoInput(boolean)> -> _SINK_
+<java.net.HttpURLConnection: void setUseCaches(boolean)> -> _SINK_
